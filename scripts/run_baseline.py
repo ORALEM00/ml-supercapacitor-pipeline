@@ -30,13 +30,14 @@ n_splits = 10 # Splits in cross-validation
 input_path = "data/processed.csv"
 index_cols = "Num_Data" 
 df = pd.read_csv(input_path, index_col = index_cols) # Complete dataset
-df_removed = drop_outliers(df) # Datset without outliers
+df_removed = drop_outliers(df, target_column = "Specific_Capacitance", group_id_colum = "Electrode_ID") # Datset without outliers
 
 
 # Model's classes to be implemented (not the model itself)
-model_class = [LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
+""" model_class = [LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
                RandomForestRegressor, XGBRegressor, CatBoostRegressor, LGBMRegressor, 
-               MLPRegressor]
+               MLPRegressor, [XGBRegressor, Ridge, CatBoostRegressor]] """
+model_class = [[XGBRegressor, Ridge, CatBoostRegressor]]
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)
@@ -49,7 +50,12 @@ output_path = "results"
 summary_results = []
 
 for model in model_class:
-    model_name = model.__name__ # Name of folder to store per model
+    # Check if Voting Regressor
+    if isinstance(model, list):
+        model_name = "VotingRegressor"
+    # Else get model name
+    else:
+        model_name = model.__name__ # Name of folder to store per model
 
     # Run analysis of each methodology
     # Simple split
@@ -91,7 +97,8 @@ for model in model_class:
 # Create dataframe for summary
 summary_df = pd.DataFrame(summary_results)
 
-summary_path = "results/summary_baseline.csv"
+#summary_path = "results/summary_baseline.csv"
+summary_path = "results/voting_regressor_baseline.csv"
 
 os.makedirs(os.path.dirname(summary_path), exist_ok = True)
 summary_df.to_csv(summary_path)

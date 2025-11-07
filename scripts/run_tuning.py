@@ -31,7 +31,7 @@ inner_n_splits = 3 # Splits in inner cross-validation (nested CV)
 input_path = "data/processed.csv"
 index_cols = "Num_Data" 
 df = pd.read_csv(input_path, index_col = index_cols) # Complete dataset
-df_removed = drop_outliers(df) # Datset without outliers
+df_removed = drop_outliers(df, target_column = "Specific_Capacitance", group_id_colum = "Electrode_ID") # Datset without outliers
 
 
 # Model's classes to be implemented (not the model itself)

@@ -7,9 +7,10 @@ from src.visualizations.metric_plotting import plot_metric_scores
 
 input_path = "results"
 
-models_name = ['LinearRegression', 'Ridge', 'Lasso', 'ElasticNet', 'SVR', 'GaussianProcessRegressor', 
+models_name = ['LinearRegression', 'Ridge', 'Lasso', 'ElasticNet', 'SVR', #'GaussianProcessRegressor', 
                'RandomForestRegressor', 'XGBRegressor', 'CatBoostRegressor', 'LGBMRegressor', 
-               'MLPRegressor']
+               'MLPRegressor', 
+               'VotingRegressor']
 
 methods = ["trainTest","trainTest_removed","randomCV","randomCV_removed","groupedCV", 
            "groupedCV_removed"]
@@ -33,7 +34,7 @@ for model in models_name:
     # Results per model
     for method in methods: 
         # Load results per methdology
-        results = load_results_from_json(f"results/{model}/tuned/{method}.json")
+        results = load_results_from_json(f"results/{model}/baseline/{method}.json")
         # Store metrics in dataframe for summary
         for metric in metrics:
             mean_val = np.mean(results[metric])
@@ -72,8 +73,8 @@ for metric in summary_df["Metric"].unique():
     pivot_tables_std[metric] = pivot_std
     
 
-metric_mean = pivot_tables_mean["MAE"]
-metric_std = pivot_tables_std["MAE"]
+metric_mean = pivot_tables_mean["R2"]
+metric_std = pivot_tables_std["R2"]
 
 mean_with = metric_mean.loc[metric_mean["Methodology"] == "groupedCV"]
 mean_with = mean_with.drop(columns="Methodology").values.flatten()
