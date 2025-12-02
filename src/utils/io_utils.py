@@ -72,7 +72,9 @@ def load_results_from_json(path):
     # data["R2_score"] = np.array(data["R2_score"])
     # data["MAE_score"] = np.array(data["MAE_score"])
     # data["RMSE_score"] = np.array(data["RMSE_score"])
-    data["y_predict"] = pd.Series(data["y_predict"])
-    data["y_true"] = pd.Series(data["y_true"])
+    if "y_predict" in data:
+        data["y_predict"] = pd.Series(data["y_predict"])
+    if "y_true" in data:
+        data["y_true"] = pd.Series(data["y_true"])
 
     return data

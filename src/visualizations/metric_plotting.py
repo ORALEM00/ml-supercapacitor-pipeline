@@ -78,7 +78,7 @@ def plot_metric_scores(data, title, filename):
 
 
 # Feature frequency
-def feature_frequency(df, features, select_stable = False, threshold = 0.5,
+""" def feature_frequency(df, features, select_stable = False, threshold = 0.5,
                       group = "Electrode_ID", target = "Specific_Capacitance"): 
     # Flatten list
     selected_features = np.array([f for sublist in features for f in sublist])
@@ -105,6 +105,59 @@ def feature_frequency(df, features, select_stable = False, threshold = 0.5,
         X = X.drop([group, target], axis = 1)
     else: 
         X = X.drop([target], axis = 1)
+        
+    # Add columns that do not appear in count
+    for col in X.columns: 
+        if col not in unique: 
+            unique = np.append(unique, col)
+            counts = np.append(counts, 0)
+            
+    # Sort by frequency (descending)
+    sort_idx = np.argsort(-counts)  # descending order
+    unique = unique[sort_idx]
+    counts = counts[sort_idx]
+    
+    # Plot - horizontal bar
+    plt.figure(figsize=(8, max(4, len(unique) * 0.3)))
+    sns.barplot(x=counts, y=unique, palette='viridis')
+    plt.xlabel("Frequency", fontsize=14)
+    plt.ylabel("Features", fontsize=14)
+    #plt.title("Feature Selection Frequency", fontsize=16, weight="bold", pad=15)
+    plt.grid(axis="x", linestyle="--", alpha=0.7)
+
+    # Add value labels
+    for i, v in enumerate(counts):
+        plt.text(v + 0.1, i, str(v), va='center', fontsize=10)
+
+    # Improve style
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
+    plt.show()
+
+    return unique, counts """
+
+
+def feature_frequency(X, y, features, return_stable = False, threshold = 0.5): 
+    # Flatten list
+    selected_features = np.array([f for sublist in features for f in sublist])
+    # Count and group per feature
+    unique, counts = np.unique(selected_features, return_counts=True)
+
+    # Threshold for selecting stable features
+    threshold = threshold 
+    n_folds = len(features) 
+    # Minimum appearances to be considered stable
+    min_appearances = int(n_folds * threshold)
+
+    # Select stable features
+    stable_features = []
+    for col, count in zip(unique,counts): 
+        if count >= min_appearances:
+            stable_features.append(str(col))
+            
+    if return_stable == True:
+        return stable_features
         
     # Add columns that do not appear in count
     for col in X.columns: 

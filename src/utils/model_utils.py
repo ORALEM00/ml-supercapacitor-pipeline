@@ -14,8 +14,8 @@ def drop_outliers(df, target_column, group_id_colum = None, iqr_factor = 1.5):
     IQR = Q3 - Q1
 
     # Thresholds
-    lower_bound = Q1 - IQR * 1.5
-    upper_bound = Q3 + IQR * 1.5
+    lower_bound = Q1 - IQR * iqr_factor
+    upper_bound = Q3 + IQR * iqr_factor
 
     # If given an group id column
     if group_id_colum is not None:
@@ -30,7 +30,7 @@ def drop_outliers(df, target_column, group_id_colum = None, iqr_factor = 1.5):
 
     # If there is no group id just drop individual rows 
     else:
-        df_cleaned = df[df[target_column] >= lower_bound & df[target_column] <= upper_bound] 
+        df_cleaned = df[(df[target_column] >= lower_bound) & (df[target_column] <= upper_bound)] 
 
     return df_cleaned
 
@@ -83,6 +83,15 @@ class CustomGroupKFold(BaseCrossValidator):
     def get_n_splits(self, X=None, y=None, groups=None):
         return self.n_splits
 
+# Dictionary to suppress verbosity of models 
+VERBOSITY_KWARGS = {
+    'XGBRegressor': {"verbosity": 0, "silent": True},
+    'LGBMRegressor': {"verbose": -1, "verbosity": -1},
+    'CatBoostRegressor': {"verbose": False},
+    'MLPRegressor': {"verbose": False},
+    # Add others if ever needed
+}
+
 
 def _get_model_instance(model_class, params=None, random_state = 42):
     """
@@ -97,6 +106,10 @@ def _get_model_instance(model_class, params=None, random_state = 42):
     Returns:
         model: An instantiated model object.
     """
+    model_name = model_class.__name__
+    # Add verbosity suppression if applicable
+    silence_params = VERBOSITY_KWARGS.get(model_name, {})
+
     if params:
         # To ensure dictionary
         if not isinstance(params, dict):
@@ -105,18 +118,18 @@ def _get_model_instance(model_class, params=None, random_state = 42):
                 )
         
         try:
-            model = model_class(random_state=random_state, **params)
+            model = model_class(random_state=random_state, **params, **silence_params)
         except TypeError:
-            model = model_class(**params)
+            model = model_class(**params, **silence_params)
     else:
         try:
-            model = model_class(random_state=random_state)
+            model = model_class(random_state=random_state, **silence_params)
         except TypeError:
-            model = model_class()
+            model = model_class(**silence_params)
     return model
 
 # Creates instance of voting regressor from the lists of models class passed
-def _get_voting_regressor_instance(models_class_list, params_list = None, random_state = 42):
+def _get_voting_regressor_instance(models_class_list, params_list = None, weights = None, random_state = 42):
     # List of models and of params must be same length (if parameters are given)
     # Each model will have its paramater dictionary on the list.
     if params_list is not None and len(models_class_list) != len(params_list):
@@ -137,7 +150,7 @@ def _get_voting_regressor_instance(models_class_list, params_list = None, random
         # Add to list of model tupples
         model_tupple.append(model)
     # Use model_tupple to instance the voting regressor
-    model_ensemble = VotingRegressor(estimators = model_tupple)
+    model_ensemble = VotingRegressor(estimators = model_tupple, weights = weights)
     return model_ensemble
 
 
@@ -159,6 +172,26 @@ def _create_cv_results_dict(R2_score, MAE_score, RMSE_score, y_predict, y_true, 
         results['params'] = params
 
     return results
+
+# Function to validate parameters of cv
+def _validate_cv_params(i,model_class, params):
+    if params is not None:
+            # More than one model (Voting Regressor)
+            if isinstance(model_class, list): 
+                if np.ndim(params) == 2:
+                    current_params = [p[i] for p in params]
+                else:
+                    # List of dictionaries for each model
+                    current_params = params 
+            else:
+                if (isinstance(params, list)):
+                    current_params = params[i]
+                else:
+                    current_params = params
+    else: 
+        current_params = None
+
+    return current_params
 
 # Validation function to raise errors 
 def _validate_cv_inputs(model_class, cv_splitter, params):
@@ -218,7 +251,6 @@ def _validate_cv_inputs(model_class, cv_splitter, params):
     else:
         # List of parameters
         if isinstance(params,list):
-
             # Lenght mismatch 
             if len(params) != n_folds:
                 raise ValueError(
@@ -231,12 +263,12 @@ def _validate_cv_inputs(model_class, cv_splitter, params):
                     f"Params expected a single dictionary or a list of {n_folds} dictionaries (one per fold),"
                     "an element in the list passed is not a dictionary."
                 )
-            
-        # Single parameter
-        elif isinstance(params,dict):
+        # Single dictionary case
+        elif not isinstance(params, dict):
             raise TypeError(
-                f"Params expects a single dictionary or a list of {n_folds} parameters,"
-                f"but instead got {type(params).__name__}."
+                "Params expected a single dictionary or a list of dictionaries (one per fold),"
+                f"but got instead {type(params).__name__}."
             )
+            
 
     

@@ -7,10 +7,10 @@ from src.visualizations.metric_plotting import plot_metric_scores
 
 input_path = "results"
 
-models_name = ['LinearRegression', 'Ridge', 'Lasso', 'ElasticNet', 'SVR', #'GaussianProcessRegressor', 
-               'RandomForestRegressor', 'XGBRegressor', 'CatBoostRegressor', 'LGBMRegressor', 
-               'MLPRegressor', 
-               'VotingRegressor']
+models_name = ['Ridge', 'Lasso', 'ElasticNet', 'SVR', 
+               'RandomForestRegressor', 'XGBRegressor', 
+               'CatBoostRegressor', 'LGBMRegressor', 'MLPRegressor']
+
 
 methods = ["trainTest","trainTest_removed","randomCV","randomCV_removed","groupedCV", 
            "groupedCV_removed"]
@@ -34,7 +34,7 @@ for model in models_name:
     # Results per model
     for method in methods: 
         # Load results per methdology
-        results = load_results_from_json(f"results/{model}/baseline/{method}.json")
+        results = load_results_from_json(f"raw_results/{model}/tuned/{method}.json")
         # Store metrics in dataframe for summary
         for metric in metrics:
             mean_val = np.mean(results[metric])
@@ -100,9 +100,9 @@ r2_data = {
 
 plot_metric_scores(r2_data, 'Comparison of MAE Scores of Grouped CV', 'mae_grouped_cv.png')
 
-""" summary_path = "results/summary_tuned.csv"
+summary_path = "raw_results/summary_tuned.csv"
 
 os.makedirs(os.path.dirname(summary_path), exist_ok = True)
 summary_df.to_csv(summary_path)
 
-print(f"Summary table saved to {summary_path}") """
+print(f"Summary table saved to {summary_path}")

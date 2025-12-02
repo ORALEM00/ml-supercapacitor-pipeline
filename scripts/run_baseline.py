@@ -29,22 +29,31 @@ n_splits = 10 # Splits in cross-validation
 # Loading database
 input_path = "data/processed.csv"
 index_cols = "Num_Data" 
+
 df = pd.read_csv(input_path, index_col = index_cols) # Complete dataset
 df_removed = drop_outliers(df, target_column = "Specific_Capacitance", group_id_colum = "Electrode_ID") # Datset without outliers
 
+# Set X, y, groups with outliers
+X = df.drop(columns = ['Specific_Capacitance', 'Electrode_ID'])
+y = df['Specific_Capacitance']
+groups = df['Electrode_ID']
+
+# set X, y, groups withoud outliers
+X_removed = df_removed.drop(columns = ['Specific_Capacitance', 'Electrode_ID'])
+y_removed = df_removed['Specific_Capacitance']
+groups_removed = df_removed['Electrode_ID']
 
 # Model's classes to be implemented (not the model itself)
-""" model_class = [LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
+model_class = [LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
                RandomForestRegressor, XGBRegressor, CatBoostRegressor, LGBMRegressor, 
-               MLPRegressor, [XGBRegressor, Ridge, CatBoostRegressor]] """
-model_class = [[XGBRegressor, Ridge, CatBoostRegressor]]
+               MLPRegressor, [XGBRegressor, Ridge, CatBoostRegressor]] 
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)
 grouped_cv_splitter = CustomGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
 
 # Output path
-output_path = "results"
+output_path = "raw_results"
 
 # To collect a summary of results
 summary_results = []
@@ -59,14 +68,15 @@ for model in model_class:
 
     # Run analysis of each methodology
     # Simple split
-    trainTest = train_test_analysis(df, model, feature_selection = True) # With Outliers
-    trainTest_removed = train_test_analysis(df_removed, model, feature_selection = True) # Without Outliers
+    trainTest = train_test_analysis(X, y, model, feature_selection = True)
+    trainTest_removed = train_test_analysis(X_removed, y_removed, model, feature_selection = True) # Without Outliers
     # Random CV
-    randomCV = cv_analysis(df, model, random_cv_splitter, feature_selection = True) # With Outliers
-    randomCV_removed = cv_analysis(df_removed, model, random_cv_splitter, feature_selection = True) # With Outliers
+    randomCV = cv_analysis(X, y, model, random_cv_splitter, feature_selection = True)
+    randomCV_removed = cv_analysis(X_removed, y_removed, model, random_cv_splitter, feature_selection = True) # With Outliers
     # Grouped CV
-    groupedCV = cv_analysis(df, model, grouped_cv_splitter, feature_selection = True)
-    groupedCV_removed = cv_analysis(df_removed, model, grouped_cv_splitter, feature_selection = True)
+    #groupedCV = cv_analysis(df, model, grouped_cv_splitter, feature_selection = True)
+    groupedCV = cv_analysis(X, y, model, grouped_cv_splitter, groups=groups, feature_selection = True)
+    groupedCV_removed = cv_analysis(X_removed, y_removed, model, grouped_cv_splitter, groups=groups_removed, feature_selection = True)
 
     # List format to easy store
     methods = [
@@ -97,8 +107,7 @@ for model in model_class:
 # Create dataframe for summary
 summary_df = pd.DataFrame(summary_results)
 
-#summary_path = "results/summary_baseline.csv"
-summary_path = "results/voting_regressor_baseline.csv"
+summary_path = "raw_results/summary_baseline.csv"
 
 os.makedirs(os.path.dirname(summary_path), exist_ok = True)
 summary_df.to_csv(summary_path)
