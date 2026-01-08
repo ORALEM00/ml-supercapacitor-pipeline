@@ -15,8 +15,7 @@ from src.modeling.model_functions import train_test_analysis, cv_analysis
 from src.utils.model_utils import drop_outliers, CustomGroupKFold
 from src.utils.io_utils import save_results_as_json
 
-""" Section to implement the already tunne models to be used in the
-    Voting Regressor, and tune the weight parameters """
+""" Baseline Voting Regressor results (without hypertunning of parameters) """
 
 # Environment variables
 RANDOM_SEED = 42 # For reproducibility

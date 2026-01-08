@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.utils.interpretability_utils import _shap_barPlot_dictionary, _align_interpretability_dicts
 
 
-def plot_interpretability_bar(data, title, filename, method = "permutation"):
+def plot_interpretability_bar(data, title, method = "perm", filename = None):
     """
     Generates a professional horizontal bar plot for a single set of 
     Permutation Importance scores (mean and std).
@@ -62,11 +62,14 @@ def plot_interpretability_bar(data, title, filename, method = "permutation"):
                 ha='left', va='center', fontsize=10, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig(filename, dpi=300)
-    plt.show()
+    if filename:
+        plt.savefig(filename, dpi=300)
+        plt.close()
+    else:
+        plt.show()
 
 
-def _plot_three_bars(data, title, filename):
+def _plot_three_bars(data, title, filename = None):
     """
     Genera un gráfico de barras VERTICAL comparando la Importancia de Permutación 
     de manera compacta y dinámica para ser incluido en un paper científico.
@@ -181,13 +184,16 @@ def _plot_three_bars(data, title, filename):
     
     # Ajuste de diseño para manejar la rotación de las etiquetas y la compacidad
     plt.tight_layout()
-    plt.savefig(filename, dpi=300)
-    plt.show()
+    if filename:
+        plt.savefig(filename, dpi=300)
+        plt.close()
+    else:
+        plt.show()
 
 
 
-def interpretability_comparison_plot(m1_removed, m1, m2_removed, m2, m3_removed, m3, filename, method = 'permutation',
-    title = 'Comprehensive Permutation Importance Comparison'):
+def interpretability_comparison_plot(m1_removed, m1, m2_removed, m2, m3_removed, m3, method = 'perm',
+    title = None, filename = None):
     """
     Handles the alignment, structuring, and plotting of the six PI result dictionaries.
     

@@ -6,7 +6,7 @@ from sklearn.model_selection import BaseCrossValidator
 ################### CHECCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCKKKKKKKKKKKKKK ########
 
 # Drop outliers based on complete electrodes or row based
-def drop_outliers(df, target_column, group_id_colum = None, iqr_factor = 1.5):
+def drop_outliers(df, target_column, group_id_colum  = None, iqr_factor = 1.5):
     # Calculate quartiles
     Q1 = df[target_column].quantile(0.25)
     Q3 = df[target_column].quantile(0.75)
@@ -31,7 +31,6 @@ def drop_outliers(df, target_column, group_id_colum = None, iqr_factor = 1.5):
     # If there is no group id just drop individual rows 
     else:
         df_cleaned = df[(df[target_column] >= lower_bound) & (df[target_column] <= upper_bound)] 
-
     return df_cleaned
 
 

@@ -13,6 +13,7 @@ from xgboost import XGBRegressor #Extreme Gradient Boosting
 from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
 from sklearn.neural_network import MLPRegressor
+from sklearn.dummy import DummyRegressor
 
 from src.modeling.model_functions import train_test_analysis, cv_analysis
 from src.utils.model_utils import drop_outliers, CustomGroupKFold
@@ -44,9 +45,9 @@ y_removed = df_removed['Specific_Capacitance']
 groups_removed = df_removed['Electrode_ID']
 
 # Model's classes to be implemented (not the model itself)
-model_class = [LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
+model_class = [DummyRegressor, LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
                RandomForestRegressor, XGBRegressor, CatBoostRegressor, LGBMRegressor, 
-               MLPRegressor, [XGBRegressor, Ridge, CatBoostRegressor]] 
+               MLPRegressor, [XGBRegressor, Ridge, CatBoostRegressor]]
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)

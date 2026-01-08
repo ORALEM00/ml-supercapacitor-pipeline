@@ -43,7 +43,9 @@ groups_removed = df_removed['Electrode_ID']
 """ model_class = [LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
                RandomForestRegressor, XGBRegressor, CatBoostRegressor, LGBMRegressor, 
                MLPRegressor]  """
-model_class = [XGBRegressor]
+
+# model_class = [[CatBoostRegressor, Ridge, XGBRegressor]]
+model_class = [CatBoostRegressor]
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)
@@ -90,13 +92,24 @@ for model in model_class:
     # Else get model name
     else:
         model_name = model.__name__ # Name of folder to store per model
-
+    print(f"Running interpretability analysis for {model_name}")
+    
     # Run tunning of each methodology
     params_dict = {}
 
     for key in ['trainTest', 'trainTest_removed', 'randomCV', 'randomCV_removed', 'groupedCV', 'groupedCV_removed']:
-        results = load_results_from_json(f"raw_results/{model_name}/tuned/{key}.json")
-        params_dict[key] = results['params']
+        if isinstance(model, list):
+            # For Voting Regressor, we need to get the params of each model
+            params = []
+            for m in model:
+                m_name = m.__name__
+                results = load_results_from_json(f"raw_results/{m_name}/tuned/{key}.json")
+                params.append(results['params'])
+            params_dict[key] = params
+
+        else:
+            results = load_results_from_json(f"raw_results/{model_name}/tuned/{key}.json")
+            params_dict[key] = results['params']
 
     ### Permutation Importace
 

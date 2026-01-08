@@ -1,13 +1,14 @@
 import matplotlib.pyplot as plt 
 
 
-def residual_errors(y, y_predictions):
+def residual_errors(y, y_predictions, filename = None):
     """
     Create scatter plot to show residual errors. 
 
         Parameters:
             y (pd.Series): Actual values
             y_predictions (pd.Series): Predicted values
+            filename (str): Optional filename to save the plot
         
         Return: 
             Scatter Plot
@@ -19,9 +20,14 @@ def residual_errors(y, y_predictions):
     plt.xlabel("Actual Values")
     plt.ylabel("Residuals")
     plt.title("Residual Plot")
+    if filename:
+        plt.savefig(filename, dpi=300)
+        plt.close()
+    else:
+        plt.show()
     
 
-def histogram_errors(y, y_predictions):
+def histogram_errors(y, y_predictions, filename = None):
     """
     Create histogram error plot. 
 
@@ -38,9 +44,14 @@ def histogram_errors(y, y_predictions):
     plt.xlabel("Residuals")
     plt.ylabel("Frequency")
     plt.title("Histogram of Residual Errors")
+    if filename:
+        plt.savefig(filename, dpi=300)
+        plt.close()
+    else:
+        plt.show()
 
 
-def plot_predictions(y, y_predictions):
+def plot_predictions(y, y_predictions, filename = None):
     """
     Create scatter plot to show actual values against predictions.
 
@@ -56,3 +67,8 @@ def plot_predictions(y, y_predictions):
     plt.xlabel('Actual Values')
     plt.ylabel('Predicted Values')
     plt.title('Predicted vs Actual Values')
+    if filename:
+        plt.savefig(filename, dpi=300)
+        plt.close()
+    else:
+        plt.show()
