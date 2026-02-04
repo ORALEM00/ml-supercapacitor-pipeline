@@ -1,11 +1,16 @@
 import pandas as pd
 import numpy as np
 import os
+from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.discriminant_analysis import StandardScaler
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import KFold 
 
 # Models to be compared
 from sklearn.linear_model import LinearRegression 
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR # Support Vector machine
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.ensemble import RandomForestRegressor # Random Forest 
@@ -14,10 +19,13 @@ from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
 from sklearn.neural_network import MLPRegressor
 
-from src.modeling.interpretability import train_test_interpretability, cv_interpretability
-from src.visualizations.metric_plotting import feature_frequency
-from src.utils.model_utils import drop_outliers, CustomGroupKFold
-from src.utils.io_utils import save_results_as_json, load_results_from_json
+from src.leakproof_ml.interpretability import train_test_interpretability, cv_interpretability
+from src.leakproof_ml.preprocessing import drop_outliers
+from src.leakproof_ml.interpretability import get_stable_features
+from src.leakproof_ml.validation import ShuffledGroupKFold
+
+from src.leakproof_ml.utils import save_results_as_json, load_results_from_json
+
 
 # Environment variables
 RANDOM_SEED = 42 # For reproducibility
@@ -44,15 +52,15 @@ groups_removed = df_removed['Electrode_ID']
                RandomForestRegressor, XGBRegressor, CatBoostRegressor, LGBMRegressor, 
                MLPRegressor]  """
 
-# model_class = [[CatBoostRegressor, Ridge, XGBRegressor]]
-model_class = [CatBoostRegressor]
+model_class = [Ridge]  
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)
-grouped_cv_splitter = CustomGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
+grouped_cv_splitter = ShuffledGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
 
 # Output path
-output_path = "raw_interpretability_results"
+#output_path = "raw_interpretability_results"
+output_path = "Tests_interpretability"
 
 # Obtain the most select features per methodology
 # Since they are selected model agnostically, we can use any model for this
@@ -65,8 +73,9 @@ features_dict = {
     'groupedCV_removed': []
 }
 
+
 for key in features_dict.keys():
-    # Read results
+    # Read results (Any model will do, here we use XGBRegressor)
     results = load_results_from_json(f"raw_results/XGBRegressor/tuned/{key}.json")
 
     # Since it has only a single list of features
@@ -76,8 +85,7 @@ for key in features_dict.keys():
     # Multiple lists of features for nested CV
     else:
         features = results['features']
-
-        frequent_features = feature_frequency(X, y, features, return_stable = True, threshold = 0.5)
+        frequent_features = get_stable_features(features, threshold = 0.5)
 
     features_dict[key] = frequent_features
 
@@ -119,32 +127,32 @@ for model in model_class:
     pi_trainTest_removed = train_test_interpretability(X_removed, y_removed, model, method="permutation", 
                                                features_to_use = features_dict['trainTest_removed'], params = params_dict["trainTest_removed"])
     # Random CV
-    pi_randomCV = cv_interpretability(X, y, model, random_cv_splitter, method="permutation", 
+    pi_randomCV = cv_interpretability(X, y, model, random_cv_splitter, method="permutation",
                                      features_to_use = features_dict['randomCV'], params = params_dict["randomCV"])
-    pi_randomCV_removed = cv_interpretability(X_removed, y_removed, model, random_cv_splitter, method="permutation", 
+    pi_randomCV_removed = cv_interpretability(X_removed, y_removed, model, random_cv_splitter, method="permutation",
                                      features_to_use = features_dict['randomCV_removed'], params = params_dict["randomCV_removed"])
     # Grouped CV
-    pi_groupedCV = cv_interpretability(X, y, model, grouped_cv_splitter, method="permutation", groups=groups, 
+    pi_groupedCV = cv_interpretability(X, y, model, grouped_cv_splitter, method="permutation", groups=groups,
                                        features_to_use = features_dict['groupedCV'], params = params_dict["groupedCV"])
-    pi_groupedCV_removed = cv_interpretability(X_removed, y_removed, model, grouped_cv_splitter, method="permutation", groups=groups_removed, 
+    pi_groupedCV_removed = cv_interpretability(X_removed, y_removed, model, grouped_cv_splitter, method="permutation", groups=groups_removed,
                                        features_to_use = features_dict['groupedCV_removed'], params = params_dict["groupedCV_removed"])
     
     ### SHAP values
 
     # Train Test
-    shap_trainTest = train_test_interpretability(X, y, model, method="shap", 
+    shap_trainTest = train_test_interpretability(X, y, model, method="shap", shap_background_size=100,
                                                features_to_use = features_dict['trainTest'], params = params_dict["trainTest"])
-    shap_trainTest_removed = train_test_interpretability(X_removed, y_removed, model, method="shap", 
+    shap_trainTest_removed = train_test_interpretability(X_removed, y_removed, model, method="shap", shap_background_size=100,
                                                features_to_use = features_dict['trainTest_removed'], params = params_dict["trainTest_removed"])
     # Random CV
-    shap_randomCV = cv_interpretability(X, y, model, random_cv_splitter, method="shap", 
+    shap_randomCV = cv_interpretability(X, y, model, random_cv_splitter, method="shap", shap_background_size=100,
                                      features_to_use = features_dict['randomCV'], params = params_dict["randomCV"])
-    shap_randomCV_removed = cv_interpretability(X_removed, y_removed, model, random_cv_splitter, method="shap", 
+    shap_randomCV_removed = cv_interpretability(X_removed, y_removed, model, random_cv_splitter, method="shap", shap_background_size=100,
                                      features_to_use = features_dict['randomCV_removed'], params = params_dict["randomCV_removed"])
     # Grouped CV
-    shap_groupedCV = cv_interpretability(X, y, model, grouped_cv_splitter, method="shap", groups=groups, 
+    shap_groupedCV = cv_interpretability(X, y, model, grouped_cv_splitter, method="shap", groups=groups, shap_background_size=100,
                                        features_to_use = features_dict['groupedCV'], params = params_dict["groupedCV"])
-    shap_groupedCV_removed = cv_interpretability(X_removed, y_removed, model, grouped_cv_splitter, method="shap", groups=groups_removed, 
+    shap_groupedCV_removed = cv_interpretability(X_removed, y_removed, model, grouped_cv_splitter, method="shap", groups=groups_removed, shap_background_size=100,
                                        features_to_use = features_dict['groupedCV_removed'], params = params_dict["groupedCV_removed"])
     
     # List format to easy store

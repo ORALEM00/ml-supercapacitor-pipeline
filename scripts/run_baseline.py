@@ -1,11 +1,20 @@
 import pandas as pd
 import numpy as np
 import os
+
+from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.discriminant_analysis import StandardScaler
+
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import KFold 
 
 # Models to be compared
 from sklearn.linear_model import LinearRegression 
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
+
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
+
 from sklearn.svm import SVR # Support Vector machine
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.ensemble import RandomForestRegressor # Random Forest 
@@ -15,9 +24,13 @@ from lightgbm import LGBMRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.dummy import DummyRegressor
 
-from src.modeling.model_functions import train_test_analysis, cv_analysis
-from src.utils.model_utils import drop_outliers, CustomGroupKFold
-from src.utils.io_utils import save_results_as_json
+from src.leakproof_ml import train_test_analysis, cv_analysis
+from src.leakproof_ml.preprocessing import drop_outliers
+from src.leakproof_ml.validation import ShuffledGroupKFold
+from src.leakproof_ml.preprocessing import CorrelationSelector
+
+from src.leakproof_ml.utils import save_results_as_json
+
 
 """
 Baseline results of the implemented models (without hypertunning of parameters)
@@ -45,19 +58,58 @@ y_removed = df_removed['Specific_Capacitance']
 groups_removed = df_removed['Electrode_ID']
 
 # Model's classes to be implemented (not the model itself)
-model_class = [DummyRegressor, LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
+""" model_class = [DummyRegressor, LinearRegression, Ridge, Lasso, ElasticNet, SVR, GaussianProcessRegressor, 
                RandomForestRegressor, XGBRegressor, CatBoostRegressor, LGBMRegressor, 
-               MLPRegressor, [XGBRegressor, Ridge, CatBoostRegressor]]
+               MLPRegressor, [XGBRegressor, Ridge, CatBoostRegressor]] """
+model_class = [Ridge]
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)
-grouped_cv_splitter = CustomGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
+grouped_cv_splitter = ShuffledGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
 
 # Output path
-output_path = "raw_results"
+# output_path = "raw_results"
+output_path = "Tests"
 
 # To collect a summary of results
 summary_results = []
+
+
+
+
+
+def polynomial_custom_factory(model, degree=2, interaction_only=False):
+
+    # 1. First Step: Handle missing values and scale
+    # We use make_column_selector to be dynamic
+    numeric_pipe = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='median')),
+        ('scaler', StandardScaler())
+    ])
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_pipe, make_column_selector(dtype_include='float64')),
+        ],
+        remainder='passthrough'
+    )
+
+
+    # 2. Construct the full pipeline
+    # We add PolynomialFeatures as a middle step
+    pipe = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('poly', PolynomialFeatures(degree=degree, interaction_only=interaction_only)),
+        ('feature_selection', CorrelationSelector(threshold=0.68)),
+        ('model', model)
+    ])
+
+    # Ensure output is pandas DataFrame for compatibility
+    # pipe.set_output(transform="pandas")
+
+    return pipe
+
+
 
 for model in model_class:
     # Check if Voting Regressor
@@ -69,7 +121,7 @@ for model in model_class:
 
     # Run analysis of each methodology
     # Simple split
-    trainTest = train_test_analysis(X, y, model, feature_selection = True)
+    trainTest = train_test_analysis(X, y, model, feature_selection = True) # With Outliers
     trainTest_removed = train_test_analysis(X_removed, y_removed, model, feature_selection = True) # Without Outliers
     # Random CV
     randomCV = cv_analysis(X, y, model, random_cv_splitter, feature_selection = True)
@@ -108,9 +160,12 @@ for model in model_class:
 # Create dataframe for summary
 summary_df = pd.DataFrame(summary_results)
 
-summary_path = "raw_results/summary_baseline.csv"
+print(summary_df)
+
+
+""" summary_path = "raw_results/summary_baseline.csv"
 
 os.makedirs(os.path.dirname(summary_path), exist_ok = True)
 summary_df.to_csv(summary_path)
 
-print(f"Summary table saved to {summary_path}")
+print(f"Summary table saved to {summary_path}") """

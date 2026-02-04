@@ -11,9 +11,12 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern,  WhiteKernel
 from sklearn.linear_model import Ridge
 
-from src.modeling.model_functions import train_test_analysis, cv_analysis
-from src.utils.model_utils import drop_outliers, CustomGroupKFold
-from src.utils.io_utils import save_results_as_json
+from src.leakproof_ml import train_test_analysis, cv_analysis
+from src.leakproof_ml.preprocessing import drop_outliers
+from src.leakproof_ml.validation import ShuffledGroupKFold
+
+from src.leakproof_ml.utils import save_results_as_json
+
 
 """ Baseline Voting Regressor results (without hypertunning of parameters) """
 
@@ -39,14 +42,16 @@ y_removed = df_removed['Specific_Capacitance']
 groups_removed = df_removed['Electrode_ID']
 
 # Model's classes to be implemented (not the model itself)
-model_class = [[XGBRegressor, Ridge, SVR], [CatBoostRegressor, Ridge, XGBRegressor]] 
+# model_class = [[XGBRegressor, Ridge, SVR], [CatBoostRegressor, Ridge, XGBRegressor]] 
+model_class = [[CatBoostRegressor, Ridge, XGBRegressor]]
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)
-grouped_cv_splitter = CustomGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
+grouped_cv_splitter = ShuffledGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
 
 # Output path
-output_path = "raw_results"
+# output_path = "raw_results"
+output_path = "Tests"
 
 # To collect a summary of results
 summary_results = []
@@ -105,9 +110,12 @@ for model in model_class:
 # Create dataframe for summary
 summary_df = pd.DataFrame(summary_results)
 
-summary_path = "raw_results/votingRegressor_baseline.csv"
+print(summary_df)
+
+""" summary_path = "raw_results/votingRegressor_baseline.csv"
 
 os.makedirs(os.path.dirname(summary_path), exist_ok = True)
 summary_df.to_csv(summary_path)
 
 print(f"Summary table saved to {summary_path}")
+ """

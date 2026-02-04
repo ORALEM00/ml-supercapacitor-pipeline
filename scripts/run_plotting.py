@@ -3,9 +3,9 @@ import shap
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.utils.io_utils import load_results_from_json
-from src.visualizations.standard_plotting import plot_predictions, histogram_errors, residual_errors
-from src.visualizations.interpretability_plotting import plot_interpretability_bar, interpretability_comparison_plot
+from src.leakproof_ml.utils import  load_results_from_json
+from src.leakproof_ml.plots import plot_predictions, histogram_errors, plot_interpretability_bar 
+from src.leakproof_ml.plots import interpretability_comparison_plot
 
 # Models to obtain results for plotting
 models_name = ['XGBRegressor', 'Ridge', 'CatBoostRegressor', 'VotingRegressor_0']

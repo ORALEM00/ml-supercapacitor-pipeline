@@ -9,9 +9,11 @@ from sklearn.svm import SVR # Support Vector machine
 from xgboost import XGBRegressor #Extreme Gradient Boosting
 from catboost import CatBoostRegressor
 
-from src.modeling.tunning import train_test_tunning, nested_cv_tunning
-from src.utils.model_utils import drop_outliers, CustomGroupKFold
-from src.utils.io_utils import save_results_as_json, load_results_from_json
+from src.leakproof_ml.tuning import train_test_tunning, nested_cv_tunning
+from src.leakproof_ml.preprocessing import drop_outliers
+from src.leakproof_ml.validation import ShuffledGroupKFold
+
+from src.leakproof_ml.utils import save_results_as_json, load_results_from_json
 
 
 # From own script
@@ -43,17 +45,19 @@ y_removed = df_removed['Specific_Capacitance']
 groups_removed = df_removed['Electrode_ID']
 
 # Model's classes to be implemented (not the model itself)
-model_class = [[XGBRegressor, Ridge, SVR], [CatBoostRegressor, Ridge, XGBRegressor]] 
+# model_class = [[XGBRegressor, Ridge, SVR], [CatBoostRegressor, Ridge, XGBRegressor]] 
+model_class = [[CatBoostRegressor, Ridge, XGBRegressor]]
 
 # Create CV splitters
 outer_random_cv_splitter = KFold(n_splits = outer_n_splits, random_state = RANDOM_SEED, shuffle = True)
 inner_random_cv_splitter = KFold(n_splits = inner_n_splits, random_state = RANDOM_SEED, shuffle = True)
 
-outer_grouped_cv_splitter = CustomGroupKFold(n_splits = outer_n_splits, random_state = RANDOM_SEED)
-inner_grouped_cv_splitter = CustomGroupKFold(n_splits = inner_n_splits, random_state = RANDOM_SEED)
+outer_grouped_cv_splitter = ShuffledGroupKFold(n_splits = outer_n_splits, random_state = RANDOM_SEED)
+inner_grouped_cv_splitter = ShuffledGroupKFold(n_splits = inner_n_splits, random_state = RANDOM_SEED)
 
 # Output path
-output_path = "raw_results"
+# output_path = "raw_results"
+output_path = "Tests"
 
 # To collect a summary of results
 summary_results = []
@@ -90,19 +94,19 @@ for model in model_class:
 
     # Simple split
     trainTest = train_test_tunning(X, y, model, model_search_function, feature_selection = True, 
-                                   params=params_dict["trainTest"]) # With Outliers
+                                   ensemble_params=params_dict["trainTest"]) # With Outliers
     trainTest_removed = train_test_tunning(X_removed, y_removed, model, model_search_function, feature_selection = True, 
-                                           params=params_dict["trainTest_removed"]) # Without Outliers
+                                           ensemble_params=params_dict["trainTest_removed"]) # Without Outliers
     # Random CV
     randomCV = nested_cv_tunning(X, y, model, outer_random_cv_splitter, inner_random_cv_splitter, 
-                                    model_search_function, feature_selection = True, params=params_dict["randomCV"]) # With Outliers
+                                    model_search_function, feature_selection = True, ensemble_params=params_dict["randomCV"]) # With Outliers
     randomCV_removed = nested_cv_tunning(X_removed, y_removed, model, outer_random_cv_splitter, inner_random_cv_splitter, 
-                                    model_search_function, feature_selection = True, params=params_dict["randomCV_removed"]) # Without Outliers
+                                    model_search_function, feature_selection = True, ensemble_params=params_dict["randomCV_removed"]) # Without Outliers
     # Grouped CV
     groupedCV = nested_cv_tunning(X, y, model, outer_grouped_cv_splitter, inner_grouped_cv_splitter, 
-                                  model_search_function, groups=groups, feature_selection = True, params=params_dict["groupedCV"]) # With Outliers
+                                  model_search_function, groups=groups, feature_selection = True, ensemble_params=params_dict["groupedCV"]) # With Outliers
     groupedCV_removed = nested_cv_tunning(X_removed, y_removed, model, outer_grouped_cv_splitter, inner_grouped_cv_splitter, 
-                                          model_search_function, groups=groups_removed ,feature_selection = True, params=params_dict["groupedCV_removed"]) # Without Outliers
+                                          model_search_function, groups=groups_removed ,feature_selection = True, ensemble_params=params_dict["groupedCV_removed"]) # Without Outliers
 
     # List format to easy store
     methods = [
@@ -137,9 +141,11 @@ for model in model_class:
 # Create dataframe for summary
 summary_df = pd.DataFrame(summary_results)
 
-summary_path = "raw_results/tuned_votingRegressor.csv"
+print(summary_df)
+
+""" summary_path = "raw_results/tuned_votingRegressor.csv"
 
 os.makedirs(os.path.dirname(summary_path), exist_ok = True)
 summary_df.to_csv(summary_path)
 
-print(f"Summary table saved to {summary_path}")
+print(f"Summary table saved to {summary_path}") """

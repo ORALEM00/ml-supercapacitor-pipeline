@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "leakproof-ml"
+version = "0.0.1"
+authors = [
+  { name="Alexei Ortiz", email="alex.lztb@gmail.com" },
+]
+description = "ML framework to avoid most common sources of data leakage"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+license = { text = "MIT" }
+
+dependencies = [
+    "numpy>=1.21,<3.0",
+    "pandas>=1.5",
+    "scikit-learn>=1.1",
+    "optuna>=3.0"
+]
+
+keywords = [
+    "machine-learning",
+    "data-leakage",
+    "framework",
+    "cross-validation",
+    "group-kfold",
+    "materials-informatics",
+    "model-evaluation"
+]
+
+
+[project.optional-dependencies]
+shap = ["shap>=0.43"]
+plots = ["matplotlib>=3.5", "seaborn>=0.12"]
+full = ["shap>=0.43", "matplotlib>=3.5", "seaborn>=0.12"]
+
+
+[project.urls]
+Homepage = "https://github.com/pypa/sampleproject"
+Issues = "https://github.com/pypa/sampleproject/issues"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/leakproof_ml"]

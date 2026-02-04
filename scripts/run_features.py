@@ -4,9 +4,11 @@ import os
 from sklearn.model_selection import KFold 
 from sklearn.linear_model import Ridge
 
-from src.utils.model_utils import drop_outliers, CustomGroupKFold
-from src.visualizations.metric_plotting import feature_frequency
-from src.modeling.model_functions import train_test_analysis, cv_analysis
+from src.leakproof_ml import cv_analysis
+from src.leakproof_ml.preprocessing import drop_outliers
+from src.leakproof_ml.validation import ShuffledGroupKFold
+from src.leakproof_ml.plots import feature_frequency
+
 
 """
 Feature stability analysis. 
@@ -61,7 +63,7 @@ model = Ridge
 
 # Create CV splitters
 random_cv_splitter = KFold(n_splits = n_splits, random_state = RANDOM_SEED, shuffle = True)
-grouped_cv_splitter = CustomGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
+grouped_cv_splitter = ShuffledGroupKFold(n_splits = n_splits, random_state = RANDOM_SEED)
 
 # Output path
 output_path = "resulting_plots/features"

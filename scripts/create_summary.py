@@ -2,8 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from src.utils.io_utils import load_results_from_json
-from src.visualizations.metric_plotting import plot_metric_scores
+from src.leakproof_ml.utils import load_results_from_json
+from src.leakproof_ml.plots import plot_metric_scores
 
 input_path = "results"
 

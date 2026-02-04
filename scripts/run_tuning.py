@@ -1,11 +1,17 @@
 import pandas as pd
 import numpy as np
 import os
+from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.discriminant_analysis import StandardScaler
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold 
 
 # Models to be compared
 from sklearn.linear_model import LinearRegression 
 from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.svm import SVR # Support Vector machine
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.ensemble import RandomForestRegressor # Random Forest 
@@ -14,12 +20,14 @@ from catboost import CatBoostRegressor
 from lightgbm import LGBMRegressor
 from sklearn.neural_network import MLPRegressor
 
-from src.modeling.tunning import train_test_tunning, nested_cv_tunning
-from src.utils.model_utils import drop_outliers, CustomGroupKFold
-from src.utils.io_utils import save_results_as_json
+from src.leakproof_ml.tuning import train_test_tunning, nested_cv_tunning
+from src.leakproof_ml.preprocessing import drop_outliers
+from src.leakproof_ml.validation import ShuffledGroupKFold
+
+from src.leakproof_ml.utils import save_results_as_json
 
 # From own script
-from scripts.search_space import params_space_search
+from .search_space import params_space_search
 
 """
 Baseline results of the implemented models (without hypertunning of parameters)
@@ -47,23 +55,24 @@ y_removed = df_removed['Specific_Capacitance']
 groups_removed = df_removed['Electrode_ID']
 
 # Model's classes to be implemented (not the model itself)
-model_class = [Ridge, Lasso, ElasticNet, SVR, # GaussianProcessRegressor, 
+""" model_class = [Ridge, Lasso, ElasticNet, SVR, # GaussianProcessRegressor, 
                RandomForestRegressor, XGBRegressor, CatBoostRegressor, LGBMRegressor, 
-               MLPRegressor]
-
+               MLPRegressor] """
+model_class = [Ridge]
 
 # Create CV splitters
 outer_random_cv_splitter = KFold(n_splits = outer_n_splits, random_state = RANDOM_SEED, shuffle = True)
 inner_random_cv_splitter = KFold(n_splits = inner_n_splits, random_state = RANDOM_SEED, shuffle = True)
 
-outer_grouped_cv_splitter = CustomGroupKFold(n_splits = outer_n_splits, random_state = RANDOM_SEED)
-inner_grouped_cv_splitter = CustomGroupKFold(n_splits = inner_n_splits, random_state = RANDOM_SEED)
+outer_grouped_cv_splitter = ShuffledGroupKFold(n_splits = outer_n_splits, random_state = RANDOM_SEED)
+inner_grouped_cv_splitter = ShuffledGroupKFold(n_splits = inner_n_splits, random_state = RANDOM_SEED)
 
 # Output path
-output_path = "raw_results"
+output_path = "Tests"
 
 # To collect a summary of results
 summary_results = []
+    
 
 for model in model_class:
     # Check if Voting Regressor
@@ -89,7 +98,7 @@ for model in model_class:
     groupedCV = nested_cv_tunning(X, y, model, outer_grouped_cv_splitter, inner_grouped_cv_splitter, 
                                   model_search_function, groups=groups, feature_selection = True) # With Outliers
     groupedCV_removed = nested_cv_tunning(X_removed, y_removed, model, outer_grouped_cv_splitter, inner_grouped_cv_splitter, 
-                                          model_search_function, groups=groups_removed ,feature_selection = True) # Without Outliers
+                                          model_search_function, groups=groups_removed, feature_selection = True) # Without Outliers
 
     # List format to easy store
     methods = [
@@ -124,15 +133,12 @@ for model in model_class:
 # Create dataframe for summary
 summary_df = pd.DataFrame(summary_results)
 
-summary_path = "raw_results/summary_tuned.csv"
+""" summary_path = "raw_results/summary_tuned.csv"
 
 os.makedirs(os.path.dirname(summary_path), exist_ok = True)
 summary_df.to_csv(summary_path)
 
-print(f"Summary table saved to {summary_path}")
+print(f"Summary table saved to {summary_path}") """
 
-print(randomCV)
-print(np.mean(randomCV['R2_score']))
-print(np.std(randomCV['R2_score']))
 
 print(summary_df)

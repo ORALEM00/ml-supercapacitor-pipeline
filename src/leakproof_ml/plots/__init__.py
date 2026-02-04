@@ -1,0 +1,4 @@
+from .metric_plots import residual_errors, histogram_errors, plot_predictions
+from .metric_plots import plot_metric_scores, feature_frequency
+
+from .explainer_plots import plot_interpretability_bar, _plot_three_bars, interpretability_comparison_plot
